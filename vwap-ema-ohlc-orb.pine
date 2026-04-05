@@ -142,8 +142,8 @@ plot(showOHLC and spmh? mpdo : na, "Prev M Open",  style=plot.style_cross,   lin
 // =======================
 // 🟠 ORB SECTION
 // =======================
-// Two horizontal session lines: open at bar that opens at time 1 and open at time 2 (chart timezone).
-// Segments run from the second time through end of that calendar day; only the last N sessions are kept.
+// Two horizontal lines at the opens of the two anchor bars (chart timezone).
+// Each pair spans the full calendar day (first bar of that day → last bar), same day boundary as VWAP (time("D")).
 
 showORB = input.bool(true, "Enable ORB section", group="ORB")
 orbDaysToShow = input.int(5, "Sessions to show", minval=1, maxval=30, group="ORB")
@@ -162,6 +162,7 @@ is945 = hour == orbH2 and minute == orbM2
 
 var float orb930 = na
 var float orb945 = na
+var int orbDayStartBar = na
 var line ln930 = na
 var line ln945 = na
 var label lb930 = na
@@ -197,8 +198,9 @@ if not showORB
     if newDayORB
         orb930 := na
         orb945 := na
+        orbDayStartBar := na
 else
-    // New calendar day: pin yesterday's segment to the prior bar, archive, reset captures
+    // New calendar day (same boundary as VWAP: ta.change(time("D"))): close prior segment, archive, reset
     if newDayORB
         if bar_index > 0
             if not na(ln930)
@@ -222,14 +224,18 @@ else
             label.delete(array.shift(histLb945))
         orb930 := na
         orb945 := na
+        orbDayStartBar := bar_index
+
+    if not newDayORB and na(orbDayStartBar)
+        orbDayStartBar := bar_index
 
     if is930
         orb930 := open
     if is945
         orb945 := open
 
-    // Create today's pair once on the second anchor bar (range fixed for the day)
-    if is945 and not na(orb930) and not na(orb945)
+    // After both anchors exist: horizontal lines from first bar of this calendar day through session end (full day width)
+    if is945 and not na(orb930) and not na(orb945) and not na(orbDayStartBar)
         if not na(ln930)
             line.delete(ln930)
         if not na(ln945)
@@ -238,12 +244,12 @@ else
             label.delete(lb930)
         if not na(lb945)
             label.delete(lb945)
-        ln930 := line.new(bar_index, orb930, bar_index, orb930, xloc=xloc.bar_index, color=orbColor1, width=2)
-        ln945 := line.new(bar_index, orb945, bar_index, orb945, xloc=xloc.bar_index, color=orbColor2, width=2)
-        lb930 := label.new(bar_index, orb930, orbIcon, xloc=xloc.bar_index, yloc=yloc.price, style=label.style_none, textcolor=orbColor1, size=size.tiny, color=color.new(color.white, 100))
-        lb945 := label.new(bar_index, orb945, orbIcon, xloc=xloc.bar_index, yloc=yloc.price, style=label.style_none, textcolor=orbColor2, size=size.tiny, color=color.new(color.white, 100))
+        ln930 := line.new(orbDayStartBar, orb930, bar_index, orb930, xloc=xloc.bar_index, color=orbColor1, width=2)
+        ln945 := line.new(orbDayStartBar, orb945, bar_index, orb945, xloc=xloc.bar_index, color=orbColor2, width=2)
+        lb930 := label.new(orbDayStartBar, orb930, orbIcon, xloc=xloc.bar_index, yloc=yloc.price, style=label.style_none, textcolor=orbColor1, size=size.tiny, color=color.new(color.white, 100))
+        lb945 := label.new(orbDayStartBar, orb945, orbIcon, xloc=xloc.bar_index, yloc=yloc.price, style=label.style_none, textcolor=orbColor2, size=size.tiny, color=color.new(color.white, 100))
 
-    // Extend through the rest of the same calendar day (stops at next newDayORB)
+    // Grow the right edge through the rest of this calendar day until the next day
     if not na(ln930) and not newDayORB
         line.set_x2(ln930, bar_index)
         line.set_x2(ln945, bar_index)
