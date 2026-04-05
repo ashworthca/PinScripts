@@ -1,0 +1,249 @@
+//@version=5
+indicator("VWAP + EMA + OHLC + ORB", overlay=true, max_lines_count=64, max_labels_count=64)
+
+
+// =======================
+// 🔵 VWAP SECTION
+// =======================
+
+showVWAP = input.bool(true, "Enable VWAP section")
+
+devUp1 = input.float(1.01, "Stdev above (1)")
+devDn1 = input.float(1.01, "Stdev below (1)")
+
+devUp2 = input.float(2.01, "Stdev above (2)")
+devDn2 = input.float(2.01, "Stdev below (2)")
+
+devUp3 = input.float(2.51, "Stdev above (3)")
+devDn3 = input.float(2.51, "Stdev below (3)")
+
+showDv2 = input.bool(true, "Show second group of bands?")
+showDv3 = input.bool(true, "Show third group of bands?")
+showPrevVWAP = input.bool(false, "Show previous VWAP close")
+
+newSession = ta.change(time("D"))
+
+var float vwapsum = na
+var float volumesum = na
+var float v2sum = na
+var float prevwap = na
+
+vwapsum := newSession ? hl2 * volume : nz(vwapsum[1]) + hl2 * volume
+volumesum := newSession ? volume : nz(volumesum[1]) + volume
+v2sum := newSession ? volume * hl2 * hl2 : nz(v2sum[1]) + volume * hl2 * hl2
+
+myvwap = vwapsum / volumesum
+dev = math.sqrt(math.max(v2sum / volumesum - myvwap * myvwap, 0))
+
+A  = plot(showVWAP ? myvwap : na, "VWAP", color=color.white, linewidth=2)
+
+U1 = plot(showVWAP ? myvwap + devUp1 * dev : na, "Upper 1", color=color.gray)
+D1 = plot(showVWAP ? myvwap - devDn1 * dev : na, "Lower 1", color=color.gray)
+
+U2 = plot(showVWAP and showDv2 ? myvwap + devUp2 * dev : na, "Upper 2", color=color.red)
+D2 = plot(showVWAP and showDv2 ? myvwap - devDn2 * dev : na, "Lower 2", color=color.green)
+
+U3 = plot(showVWAP and showDv3 ? myvwap + devUp3 * dev : na, "Upper 3", color=color.red)
+D3 = plot(showVWAP and showDv3 ? myvwap - devDn3 * dev : na, "Lower 3", color=color.green)
+
+prevwap := newSession ? myvwap[1] : nz(prevwap[1])
+plot(showVWAP and showPrevVWAP ? prevwap : na, "Prev VWAP", color=close > prevwap ? color.green : color.red)
+
+fill(A, U1, color=color.new(color.gray, 90))
+fill(A, D1, color=color.new(color.gray, 90))
+
+fill(U1, U2, color=color.new(color.red, 90))
+fill(D1, D2, color=color.new(color.green, 90))
+
+fill(U2, U3, color=color.new(color.red, 90))
+fill(D2, D3, color=color.new(color.green, 90))
+
+
+// =======================
+// 🟢 EMA SECTION
+// =======================
+
+showEMA = input.bool(true, "Enable EMA section")
+
+ema1 = ta.ema(close, 9)
+ema2 = ta.ema(close, 21)
+ema3 = ta.ema(close, 55)
+
+plot(showEMA ? ema1 : na, "EMA 9", color=color.yellow, linewidth=2)
+plot(showEMA ? ema2 : na, "EMA 21", color=color.orange, linewidth=2)
+plot(showEMA ? ema3 : na, "EMA 55", color=color.blue, linewidth=2)
+
+
+// =======================
+// 🟣 OHLC SECTION (ADDED)
+// =======================
+
+showOHLC = input.bool(true, "Enable OHLC section")
+
+// Inputs
+st  = input.bool(true,  "Show Today's OHLC?")
+sy  = input.bool(false, "Show Yesterday's OHLC?")
+swt = input.bool(false, "Show This Week's OHLC?")
+swy = input.bool(false, "Show Previous Week's OHLC?")
+smh = input.bool(false, "Show Monthly OHLC?")
+spmh= input.bool(false, "Show Previous Month's OHLC?")
+
+// Daily
+tdo = request.security(syminfo.tickerid, "D", open, lookahead=barmerge.lookahead_off)
+pdo = request.security(syminfo.tickerid, "D", open[1], lookahead=barmerge.lookahead_off)
+pc  = request.security(syminfo.tickerid, "D", close, lookahead=barmerge.lookahead_off)
+pdc = request.security(syminfo.tickerid, "D", close[1], lookahead=barmerge.lookahead_off)
+ph  = request.security(syminfo.tickerid, "D", high, lookahead=barmerge.lookahead_off)
+pdh = request.security(syminfo.tickerid, "D", high[1], lookahead=barmerge.lookahead_off)
+pl  = request.security(syminfo.tickerid, "D", low, lookahead=barmerge.lookahead_off)
+pdl = request.security(syminfo.tickerid, "D", low[1], lookahead=barmerge.lookahead_off)
+
+// Weekly
+wtdo = request.security(syminfo.tickerid, "W", open, lookahead=barmerge.lookahead_off)
+wpdo = request.security(syminfo.tickerid, "W", open[1], lookahead=barmerge.lookahead_off)
+wpc  = request.security(syminfo.tickerid, "W", close, lookahead=barmerge.lookahead_off)
+wpdc = request.security(syminfo.tickerid, "W", close[1], lookahead=barmerge.lookahead_off)
+wph  = request.security(syminfo.tickerid, "W", high, lookahead=barmerge.lookahead_off)
+wpdh = request.security(syminfo.tickerid, "W", high[1], lookahead=barmerge.lookahead_off)
+wpl  = request.security(syminfo.tickerid, "W", low, lookahead=barmerge.lookahead_off)
+wpdl = request.security(syminfo.tickerid, "W", low[1], lookahead=barmerge.lookahead_off)
+
+// Monthly
+mtdo = request.security(syminfo.tickerid, "M", open, lookahead=barmerge.lookahead_off)
+mpdo = request.security(syminfo.tickerid, "M", open[1], lookahead=barmerge.lookahead_off)
+mpc  = request.security(syminfo.tickerid, "M", close, lookahead=barmerge.lookahead_off)
+mpdc = request.security(syminfo.tickerid, "M", close[1], lookahead=barmerge.lookahead_off)
+mph  = request.security(syminfo.tickerid, "M", high, lookahead=barmerge.lookahead_off)
+mpdh = request.security(syminfo.tickerid, "M", high[1], lookahead=barmerge.lookahead_off)
+mpl  = request.security(syminfo.tickerid, "M", low, lookahead=barmerge.lookahead_off)
+mpdl = request.security(syminfo.tickerid, "M", low[1], lookahead=barmerge.lookahead_off)
+
+// Daily plots
+plot(showOHLC and st  ? tdo : na, "Daily Open",  style=plot.style_circles, linewidth=2, color=color.silver)
+plot(showOHLC and sy  ? pdo : na, "Prev Open",   style=plot.style_cross,   linewidth=2, color=color.silver)
+
+plot(showOHLC and st  ? pc  : na, "Daily Close", style=plot.style_circles, linewidth=2, color=color.fuchsia)
+plot(showOHLC and sy  ? pdc : na, "Prev Close",  style=plot.style_cross,   linewidth=2, color=color.fuchsia)
+
+plot(showOHLC and st  ? ph  : na, "Daily High",  style=plot.style_circles, linewidth=2, color=color.lime)
+plot(showOHLC and sy  ? pdh : na, "Prev High",   style=plot.style_cross,   linewidth=2, color=color.lime)
+
+plot(showOHLC and st  ? pl  : na, "Daily Low",   style=plot.style_circles, linewidth=2, color=color.red)
+plot(showOHLC and sy  ? pdl : na, "Prev Low",    style=plot.style_cross,   linewidth=2, color=color.red)
+
+// Weekly
+plot(showOHLC and swt ? wtdo : na, "Weekly Open", style=plot.style_circles, linewidth=3, color=color.silver)
+plot(showOHLC and swy ? wpdo : na, "Prev W Open", style=plot.style_cross,   linewidth=3, color=color.silver)
+
+// Monthly
+plot(showOHLC and smh ? mtdo : na, "Monthly Open", style=plot.style_circles, linewidth=4, color=color.silver)
+plot(showOHLC and spmh? mpdo : na, "Prev M Open",  style=plot.style_cross,   linewidth=4, color=color.silver)
+
+// =======================
+// 🟠 ORB SECTION
+// =======================
+// Two horizontal session lines: open at bar that opens at time 1 and open at time 2 (chart timezone).
+// Segments run from the second time through end of that calendar day; only the last N sessions are kept.
+
+showORB = input.bool(true, "Enable ORB section", group="ORB")
+orbDaysToShow = input.int(5, "Sessions to show", minval=1, maxval=30, group="ORB")
+orbH1 = input.int(9, "Line 1 — hour", minval=0, maxval=23, group="ORB")
+orbM1 = input.int(30, "Line 1 — minute", minval=0, maxval=59, group="ORB")
+orbH2 = input.int(9, "Line 2 — hour", minval=0, maxval=23, group="ORB")
+orbM2 = input.int(45, "Line 2 — minute", minval=0, maxval=59, group="ORB")
+orbIcon = input.string("◆", "Label icon (short text)", group="ORB")
+orbColor1 = input.color(color.orange, "Line 1 color", group="ORB")
+orbColor2 = input.color(color.aqua, "Line 2 color", group="ORB")
+
+newDayORB = ta.change(time("D"))
+
+is930 = hour == orbH1 and minute == orbM1
+is945 = hour == orbH2 and minute == orbM2
+
+var float orb930 = na
+var float orb945 = na
+var line ln930 = na
+var line ln945 = na
+var label lb930 = na
+var label lb945 = na
+
+var array<line> hist930 = array.new_line(0)
+var array<line> hist945 = array.new_line(0)
+var array<label> histLb930 = array.new_label(0)
+var array<label> histLb945 = array.new_label(0)
+
+if not showORB
+    if not na(ln930)
+        line.delete(ln930)
+        ln930 := na
+    if not na(ln945)
+        line.delete(ln945)
+        ln945 := na
+    if not na(lb930)
+        label.delete(lb930)
+        lb930 := na
+    if not na(lb945)
+        label.delete(lb945)
+        lb945 := na
+    while array.size(hist930) > 0
+        line.delete(array.shift(hist930))
+        line.delete(array.shift(hist945))
+        label.delete(array.shift(histLb930))
+        label.delete(array.shift(histLb945))
+    array.clear(hist930)
+    array.clear(hist945)
+    array.clear(histLb930)
+    array.clear(histLb945)
+    if newDayORB
+        orb930 := na
+        orb945 := na
+else
+    // New calendar day: pin yesterday's segment to the prior bar, archive, reset captures
+    if newDayORB
+        if bar_index > 0
+            if not na(ln930)
+                line.set_x2(ln930, bar_index - 1)
+            if not na(ln945)
+                line.set_x2(ln945, bar_index - 1)
+        if not na(ln930)
+            array.push(hist930, ln930)
+            array.push(hist945, ln945)
+            array.push(histLb930, lb930)
+            array.push(histLb945, lb945)
+            ln930 := na
+            ln945 := na
+            lb930 := na
+            lb945 := na
+        // At most orbDaysToShow sessions on chart: (orbDaysToShow - 1) archived + today’s active segment
+        while array.size(hist930) >= orbDaysToShow
+            line.delete(array.shift(hist930))
+            line.delete(array.shift(hist945))
+            label.delete(array.shift(histLb930))
+            label.delete(array.shift(histLb945))
+        orb930 := na
+        orb945 := na
+
+    if is930
+        orb930 := open
+    if is945
+        orb945 := open
+
+    // Create today's pair once on the second anchor bar (range fixed for the day)
+    if is945 and not na(orb930) and not na(orb945)
+        if not na(ln930)
+            line.delete(ln930)
+        if not na(ln945)
+            line.delete(ln945)
+        if not na(lb930)
+            label.delete(lb930)
+        if not na(lb945)
+            label.delete(lb945)
+        ln930 := line.new(bar_index, orb930, bar_index, orb930, xloc=xloc.bar_index, color=orbColor1, width=2)
+        ln945 := line.new(bar_index, orb945, bar_index, orb945, xloc=xloc.bar_index, color=orbColor2, width=2)
+        lb930 := label.new(bar_index, orb930, orbIcon, xloc=xloc.bar_index, yloc=yloc.price, style=label.style_none, textcolor=orbColor1, size=size.tiny, color=color.new(color.white, 100))
+        lb945 := label.new(bar_index, orb945, orbIcon, xloc=xloc.bar_index, yloc=yloc.price, style=label.style_none, textcolor=orbColor2, size=size.tiny, color=color.new(color.white, 100))
+
+    // Extend through the rest of the same calendar day (stops at next newDayORB)
+    if not na(ln930) and not newDayORB
+        line.set_x2(ln930, bar_index)
+        line.set_x2(ln945, bar_index)
