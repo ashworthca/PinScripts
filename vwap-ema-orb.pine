@@ -1,5 +1,5 @@
 //@version=5
-indicator("VWAP + EMA + OHLC + ORB", overlay=true, max_lines_count=64, max_labels_count=64)
+indicator("VWAP + EMA + ORB", overlay=true, max_lines_count=64, max_labels_count=64)
 
 
 // =======================
@@ -73,71 +73,6 @@ plot(showEMA ? ema1 : na, "EMA 9", color=color.yellow, linewidth=2)
 plot(showEMA ? ema2 : na, "EMA 21", color=color.orange, linewidth=2)
 plot(showEMA ? ema3 : na, "EMA 55", color=color.blue, linewidth=2)
 
-
-// =======================
-// 🟣 OHLC SECTION (ADDED)
-// =======================
-
-showOHLC = input.bool(true, "Enable OHLC section")
-
-// Inputs
-st  = input.bool(true,  "Show Today's OHLC?")
-sy  = input.bool(false, "Show Yesterday's OHLC?")
-swt = input.bool(false, "Show This Week's OHLC?")
-swy = input.bool(false, "Show Previous Week's OHLC?")
-smh = input.bool(false, "Show Monthly OHLC?")
-spmh= input.bool(false, "Show Previous Month's OHLC?")
-
-// Daily
-tdo = request.security(syminfo.tickerid, "D", open, lookahead=barmerge.lookahead_off)
-pdo = request.security(syminfo.tickerid, "D", open[1], lookahead=barmerge.lookahead_off)
-pc  = request.security(syminfo.tickerid, "D", close, lookahead=barmerge.lookahead_off)
-pdc = request.security(syminfo.tickerid, "D", close[1], lookahead=barmerge.lookahead_off)
-ph  = request.security(syminfo.tickerid, "D", high, lookahead=barmerge.lookahead_off)
-pdh = request.security(syminfo.tickerid, "D", high[1], lookahead=barmerge.lookahead_off)
-pl  = request.security(syminfo.tickerid, "D", low, lookahead=barmerge.lookahead_off)
-pdl = request.security(syminfo.tickerid, "D", low[1], lookahead=barmerge.lookahead_off)
-
-// Weekly
-wtdo = request.security(syminfo.tickerid, "W", open, lookahead=barmerge.lookahead_off)
-wpdo = request.security(syminfo.tickerid, "W", open[1], lookahead=barmerge.lookahead_off)
-wpc  = request.security(syminfo.tickerid, "W", close, lookahead=barmerge.lookahead_off)
-wpdc = request.security(syminfo.tickerid, "W", close[1], lookahead=barmerge.lookahead_off)
-wph  = request.security(syminfo.tickerid, "W", high, lookahead=barmerge.lookahead_off)
-wpdh = request.security(syminfo.tickerid, "W", high[1], lookahead=barmerge.lookahead_off)
-wpl  = request.security(syminfo.tickerid, "W", low, lookahead=barmerge.lookahead_off)
-wpdl = request.security(syminfo.tickerid, "W", low[1], lookahead=barmerge.lookahead_off)
-
-// Monthly
-mtdo = request.security(syminfo.tickerid, "M", open, lookahead=barmerge.lookahead_off)
-mpdo = request.security(syminfo.tickerid, "M", open[1], lookahead=barmerge.lookahead_off)
-mpc  = request.security(syminfo.tickerid, "M", close, lookahead=barmerge.lookahead_off)
-mpdc = request.security(syminfo.tickerid, "M", close[1], lookahead=barmerge.lookahead_off)
-mph  = request.security(syminfo.tickerid, "M", high, lookahead=barmerge.lookahead_off)
-mpdh = request.security(syminfo.tickerid, "M", high[1], lookahead=barmerge.lookahead_off)
-mpl  = request.security(syminfo.tickerid, "M", low, lookahead=barmerge.lookahead_off)
-mpdl = request.security(syminfo.tickerid, "M", low[1], lookahead=barmerge.lookahead_off)
-
-// Daily plots
-plot(showOHLC and st  ? tdo : na, "Daily Open",  style=plot.style_circles, linewidth=2, color=color.silver)
-plot(showOHLC and sy  ? pdo : na, "Prev Open",   style=plot.style_cross,   linewidth=2, color=color.silver)
-
-plot(showOHLC and st  ? pc  : na, "Daily Close", style=plot.style_circles, linewidth=2, color=color.fuchsia)
-plot(showOHLC and sy  ? pdc : na, "Prev Close",  style=plot.style_cross,   linewidth=2, color=color.fuchsia)
-
-plot(showOHLC and st  ? ph  : na, "Daily High",  style=plot.style_circles, linewidth=2, color=color.lime)
-plot(showOHLC and sy  ? pdh : na, "Prev High",   style=plot.style_cross,   linewidth=2, color=color.lime)
-
-plot(showOHLC and st  ? pl  : na, "Daily Low",   style=plot.style_circles, linewidth=2, color=color.red)
-plot(showOHLC and sy  ? pdl : na, "Prev Low",    style=plot.style_cross,   linewidth=2, color=color.red)
-
-// Weekly
-plot(showOHLC and swt ? wtdo : na, "Weekly Open", style=plot.style_circles, linewidth=3, color=color.silver)
-plot(showOHLC and swy ? wpdo : na, "Prev W Open", style=plot.style_cross,   linewidth=3, color=color.silver)
-
-// Monthly
-plot(showOHLC and smh ? mtdo : na, "Monthly Open", style=plot.style_circles, linewidth=4, color=color.silver)
-plot(showOHLC and spmh? mpdo : na, "Prev M Open",  style=plot.style_cross,   linewidth=4, color=color.silver)
 
 // =======================
 // 🟠 ORB SECTION
